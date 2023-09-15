@@ -1,6 +1,7 @@
 <html>
 <head>
 	<script src="js/rebates-web-sdk.js"></script>
+	<style type="text/css">code { display: block; border: 1px solid #000; margin: 4px; padding: 8px; }</style> 
 </head>
 <body>
 	<h1>Rebates SDK DEMO</h1>
@@ -16,5 +17,30 @@
 	<script type="text/javascript">
 		window.initializeSwiftly('b0fbc8a0-c305-4adc-97c0-80d7548ea2f9')
 	</script>
+
+
+	<h2>Setup Instructions</h2>
+
+	To run this, include the following script in the head
+
+	<code>
+		&lt;script src="js/rebates-web-sdk.js"&gt;&lt;/script&gt;
+	</code>
+
+	and in the body call this
+	<code>
+		&lt;script type="text/javascript"&gt;
+			window.initializeSwiftly('b0fbc8a0-c305-4adc-97c0-80d7548ea2f9')
+		&lt;/script&gt;
+	</code>
+
+	to call a single rebate (rebate id: 75d0f567-e4c1-457f-a32a-b61bff87e211)
+	<code>
+		&lt;swiftly-rebates id="75d0f567-e4c1-457f-a32a-b61bff87e211"&gt;&lt;/swiftly-rebates&gt;
+	</code>
+	to call for a list of rebates (category: Coupon/sm-beer-wine-spirits):
+	<code>
+		&lt;swiftly-rebates category="Coupon/sm-beer-wine-spirits"&gt;&lt;/swiftly-rebates&gt;
+	</code>
 </body>
 </html>
