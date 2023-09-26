@@ -1,7 +1,6 @@
 var baseUrl = 'https://rebates.swiftlyapi.net/rebates/active/'
 
-function makeSDK(banner, entity, storageNameOverride) {
-	const storageName = storageNameOverride || 'SwiftlyInc';
+function makeSDK(banner, entity, storageName) {
 	return {
 		// fetches the thing
 		fetch: async () => {
@@ -34,38 +33,66 @@ function makeSDK(banner, entity, storageNameOverride) {
 				acc[rebate[property]] = (acc[rebate[property]] || []).concat(rebate)
 				return acc
 			}, {})[value]
+ 		},
+ 		// make the call
+ 		clip: (rebateId, element) => {
+ 			if (!window.swiftly.isLoggedIn()) {
+ 				console.log("you have to be logged in to clip")
+ 				return
+ 			}
+ 			element.innerHTML = "TODO Clipped";
+ 			element.disabled = true;
+ 			console.log(`TODO: send clip request for token ${window.swiftly.token()}`)
  		}
 	};
 }
 
-window.initializeSwiftly = async (banner) => {
+window.initializeSwiftly = async (banner, storageNameOverride) => {
+	const storageName = storageNameOverride || 'SwiftlyInc';
 	window.swiftly = {
 		login: ({ email, password }) => {
 			console.log("email and password login attempted", email, password)
 			const token = "something"
 
+			// TODO(call to fetch user's offers)
+
 			const storage = JSON.parse(window.localStorage[storageName] || '{}')
-			window.localStorage[storageName] = JSON.stringify({ ...storage, user: { mail, token } })
+			window.localStorage[storageName] = JSON.stringify({ ...storage, user: { email, token } })
 		},
 		rebates: {
-			...makeSDK(banner, 'rebates'),
-		}
+			...makeSDK(banner, 'rebates', storageName),
+		},
+		token: () => JSON.parse(window.localStorage[storageName] || '{}').token,
+		isLoggedIn: () => !!JSON.parse(window.localStorage[storageName] || '{}').token
 	};
 
 	const buildCard = (shadow, rebateId) => {
 		const rebate = window.swiftly.rebates.details(rebateId)
 		const element = document.createElement("div")
 
+		// TODO (plug in state)
 		const clipped = false
-		const action = clipped ? `<p "text-align: center;">Clipped</p>` : `<button style="border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; width:100%; padding: 8px; border: 0; border-top: 1px solid #000;" onclick="this.disabled=true; this.innerHTML='Clipped'">Clip</button>`;
+
+		const action = clipped ? document.createElement('p') : document.createElement('button');
+		if (clipped) {
+			action.disabled = true;
+			action.innerHTML = 'Clipped';
+		} else {
+			action.addEventListener("click", el => {
+				window.swiftly.rebates.clip(rebateId, el.target);
+			})
+			action.id = `swiftly-rebate-${rebate.rebateId}`;
+			action.style = 'border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; width:100%; padding: 8px; border: 0; border-top: 1px solid #000;';
+			action.innerHTML = 'Clip';
+		}
 
 		element.style = "width: 200px; display: inline-block; border: 1px solid; border-radius: 16px; height: 400px; display: flex; flex-direction: column;";
 		element.innerHTML = `
 		<span style="color: rgb(61, 129, 41); font-size: 18px; display: block; text-align: center; padding: 8px; height: 40px;">${rebate.brand}</span>
 		<span style="color: rgb(61, 129, 41); font-size: 18px; font-weight: 600; display: block; text-align: center; padding: 0 8px 8px 8px;">${rebate.valueDisplay}</span>
 		<span style="color: #5b5653; font-size: 13px; display: block; text-align: center; padding: 0 8px 8px 8px; flex-grow: 1;">${rebate.shortDescription}</span>
-		<img src="${rebate.imageThumbnailUrl}" role="presentation" style="width: 100%" />
-		<div id="swiftly-rebate-${rebate.rebateId}">${action}</div>`;
+		<img src="${rebate.imageThumbnailUrl}" role="presentation" style="width: 100%" />`
+		element.appendChild(action);
 		shadow.appendChild(element);
 	}
 
