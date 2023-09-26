@@ -1,10 +1,12 @@
-var baseUrl = 'https://rebates.swiftlyapi.net/rebates/active/'
+var baseUrl = 'https://rebates.swiftlyapi.net';
+var activeUrl = (banner) => `${baseUrl}/rebates/active/'${banner}`;
+var clipUrl = (banner, customer) => `${baseUrl}/rebates/clipped/${banner}/customer/${customer}`;
 
 function makeSDK(banner, entity, storageName) {
 	return {
 		// fetches the thing
 		fetch: async () => {
-			const request = await fetch(`${baseUrl}${banner}`, {
+			const request = await fetch(activeUrl(banner), {
 				headers: {
 					"Content-Type": "application/json",
 				}
@@ -34,36 +36,47 @@ function makeSDK(banner, entity, storageName) {
 				return acc
 			}, {})[value]
  		},
- 		// make the call
- 		clip: (rebateId, element) => {
- 			if (!window.swiftly.isLoggedIn()) {
- 				console.log("you have to be logged in to clip")
- 				return
- 			}
- 			element.innerHTML = "TODO Clipped";
- 			element.disabled = true;
- 			console.log(`TODO: send clip request for token ${window.swiftly.token()}`)
- 		}
 	};
 }
 
 window.initializeSwiftly = async (banner, storageNameOverride) => {
 	const storageName = storageNameOverride || 'SwiftlyInc';
 	window.swiftly = {
-		login: ({ email, password }) => {
+		login: ({ email, uid, password }) => {
 			console.log("email and password login attempted", email, password)
 			const token = "something"
+			const id = uid;
 
 			// TODO(call to fetch user's offers)
 
 			const storage = JSON.parse(window.localStorage[storageName] || '{}')
-			window.localStorage[storageName] = JSON.stringify({ ...storage, user: { email, token } })
+			window.localStorage[storageName] = JSON.stringify({ ...storage, user: { email, id, token } })
 		},
 		rebates: {
 			...makeSDK(banner, 'rebates', storageName),
+	 		// make the call
+	 		clip: async (rebateId, element) => {
+	 			if (!window.swiftly.isLoggedIn()) {
+	 				console.log("you have to be logged in to clip")
+	 				return
+	 			}
+	 			element.innerHTML = "Clipping";
+	 			element.disabled = true;
+	 			console.log(`TODO: send clip request for token ${window.swiftly.token()}`)
+	 			try {
+		 			const response = await fetch(clipUrl(banner, window.swiftly.customerId));
+		 			const result = await response.json();
+		 			element.innerHTML = "Clipped";
+		 		} catch (ex) {
+		 			console.log(ex);
+	 				element.innerHTML = "Clip";
+		 			element.disabled = false;
+		 		}
+	 		}
 		},
-		token: () => JSON.parse(window.localStorage[storageName] || '{}').token,
-		isLoggedIn: () => !!JSON.parse(window.localStorage[storageName] || '{}').token
+		customerId: () => (JSON.parse(window.localStorage[storageName] || '{}').user || {}).id,
+		token: () => (JSON.parse(window.localStorage[storageName] || '{}').user || {}).token,
+		isLoggedIn: () => !!(JSON.parse(window.localStorage[storageName] || '{}').user || {}).token
 	};
 
 	const buildCard = (shadow, rebateId) => {
