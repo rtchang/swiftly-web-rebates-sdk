@@ -48,7 +48,7 @@
 	</code>
 
 	<div id="firebaseui-auth-container"></div>
-	<div id="loader">Loading...</div><script type="module">
+	<script type="module">
 	  // Import the functions you need from the SDKs you need
 	  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 	  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
@@ -69,34 +69,28 @@
 
 	  // Initialize Firebase
 	  const app = initializeApp(firebaseConfig);
-  
-		const initApp = function() {
-			// Initialize the FirebaseUI Widget using Firebase.
-			var ui = new firebaseui.auth.AuthUI(firebase.auth());
-			ui.start('#firebaseui-auth-container', {
-			  signInOptions: [
-			    firebase.auth.EmailAuthProvider.PROVIDER_ID
-			  ],
-			  // Other config options...
-			});
-			firebase.auth().onAuthStateChanged((user) => {
-			  if (user) {
-			    // User is signed in, see docs for a list of available properties
-			    // https://firebase.google.com/docs/reference/js/v8/firebase.User
-			    var uid = user.uid;
-			    console.log(user)
-			    swiftly && swiftly.login(user)
-			    // ...
-			  } else {
-			    // User is signed out
-			    // ...
-			    console.log('signed out')
-			  }
-			});
-		};
-		window.addEventListener('load', function() {
-	    	initApp()
-	    });
+      // FirebaseUI config.
+      var uiConfig = {
+        signInSuccessUrl: '/',
+        signInOptions: [
+          // Leave the lines as is for the providers you want to offer your users.
+          firebase.auth.GoogleAuthProvider.PROVIDER_ID,,
+          firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        ],
+        // tosUrl and privacyPolicyUrl accept either url string or a callback
+        // function.
+        // Terms of service url/callback.
+        tosUrl: '<your-tos-url>',
+        // Privacy policy url/callback.
+        privacyPolicyUrl: function() {
+          window.location.assign('<your-privacy-policy-url>');
+        }
+      };
+
+      // Initialize the FirebaseUI Widget using Firebase.
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+      // The start method will wait until the DOM is loaded.
+      ui.start('#firebaseui-auth-container', uiConfig);
 	</script>
 </body>
 </html>
