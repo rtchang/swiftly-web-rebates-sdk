@@ -2,8 +2,10 @@
 <head>
 	<script src="js/rebates-web-sdk.js"></script>
 	<style type="text/css">code { display: block; border: 1px solid #000; margin: 4px; padding: 8px; }</style> 
-	<script src="//www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
-	<link type="text/css" rel="stylesheet" href="//www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
+    <script src="//www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="//www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script src="//www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="//www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
 </head>
 <body>
 	<h1>Rebates SDK DEMO</h1>
@@ -45,30 +47,56 @@
 		&lt;swiftly-rebates category="Coupon/sm-beer-wine-spirits"&gt;&lt;/swiftly-rebates&gt;
 	</code>
 
-	<div id="firebaseui-auth-container">
-	</div>
-	<script type="text/javascript">
-		// Initialize the FirebaseUI Widget using Firebase.
-		var ui = new firebaseui.auth.AuthUI(firebase.auth());
-		ui.start('#firebaseui-auth-container', {
-		  signInOptions: [
-		    firebase.auth.EmailAuthProvider.PROVIDER_ID
-		  ],
-		  // Other config options...
-		});
-		firebase.auth().onAuthStateChanged((user) => {
-		  if (user) {
-		    // User is signed in, see docs for a list of available properties
-		    // https://firebase.google.com/docs/reference/js/v8/firebase.User
-		    var uid = user.uid;
-		    console.log(user)
-		    // ...
-		  } else {
-		    // User is signed out
-		    // ...
-		    console.log('signed out')
-		  }
-		});
+	<div id="firebaseui-auth-container"></div>
+	<div id="loader">Loading...</div><script type="module">
+	  // Import the functions you need from the SDKs you need
+	  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+	  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-analytics.js";
+	  // TODO: Add SDKs for Firebase products that you want to use
+	  // https://firebase.google.com/docs/web/setup#available-libraries
+
+	  // Your web app's Firebase configuration
+	  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+	  const firebaseConfig = {
+	    apiKey: "AIzaSyBksqHJ_P10Fs7I2xYUS67fjkVvf1Avu1I",
+	    authDomain: "swiftly-tmr-nonprod.firebaseapp.com",
+	    projectId: "swiftly-tmr-nonprod",
+	    storageBucket: "swiftly-tmr-nonprod.appspot.com",
+	    messagingSenderId: "283682165872",
+	    appId: "1:283682165872:web:d44ac496f49a2c436350b5",
+	    measurementId: "G-31RX4G1J4L"
+	  };
+
+	  // Initialize Firebase
+	  const app = initializeApp(firebaseConfig);
+  
+		const initApp = function() {
+			// Initialize the FirebaseUI Widget using Firebase.
+			var ui = new firebaseui.auth.AuthUI(firebase.auth());
+			ui.start('#firebaseui-auth-container', {
+			  signInOptions: [
+			    firebase.auth.EmailAuthProvider.PROVIDER_ID
+			  ],
+			  // Other config options...
+			});
+			firebase.auth().onAuthStateChanged((user) => {
+			  if (user) {
+			    // User is signed in, see docs for a list of available properties
+			    // https://firebase.google.com/docs/reference/js/v8/firebase.User
+			    var uid = user.uid;
+			    console.log(user)
+			    swiftly && swiftly.login(user)
+			    // ...
+			  } else {
+			    // User is signed out
+			    // ...
+			    console.log('signed out')
+			  }
+			});
+		};
+		window.addEventListener('load', function() {
+	    	initApp()
+	    });
 	</script>
 </body>
 </html>
