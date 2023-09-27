@@ -2,23 +2,23 @@
 <head>
 	<script src="js/rebates-web-sdk.js"></script>
 	<style type="text/css">code { display: block; border: 1px solid #000; margin: 4px; padding: 8px; }</style> 
-    <link type="text/css" rel="stylesheet" href="//www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
 </head>
 <body>
 	<h1>Rebates SDK DEMO</h1>
-	<h2>Limitations</h2>
-	<ul>
-		<li>clip does not actually clip (no one is logged in)</li>
-	</ul>
+	<h2>Credentials</h2>
+	<p>Please fill in the form below with a user-id, it will persist the state of the clipped coupons. Note, authentication is a pass-through for this test environment.</p>
+	<form onsubmit="window.swiftly.login({ uid: document.getElementById('user-id').value, email: '', password: ''}); return false">
+		<label for="user-id">UserId</label><input type="text" id="user-id" />
+		<button>Submit</button>
+	</form>
 	<h2>Examples</h2>
 	<h3>A single Rebate</h3>
-	<swiftly-rebates id="75d0f567-e4c1-457f-a32a-b61bff87e211"></swiftly-rebates>
+	<swiftly-rebates rebate-id="23eeec23-222b-4e44-af11-1fd366b3ee82"></swiftly-rebates>
 	<h3>A Grid of Rebates (by category)</h3>
-	<swiftly-rebates category="Coupon/sm-beer-wine-spirits"></swiftly-rebates>
+	<swiftly-rebates category="Coupon/blue-milk"></swiftly-rebates>
 	<script type="text/javascript">
-		window.initializeSwiftly('20f1000c-786d-4689-89d4-41e0653e8a5b')
+		window.initializeSwiftly('7bcca045-2456-40a2-a0a0-386fd22715dd')
 	</script>
-
 
 	<h2>Setup Instructions</h2>
 
@@ -31,7 +31,7 @@
 	and in the body call this
 	<code>
 		&lt;script type="text/javascript"&gt;
-			window.initializeSwiftly('20f1000c-786d-4689-89d4-41e0653e8a5b')
+			window.initializeSwiftly('7bcca045-2456-40a2-a0a0-386fd22715dd')
 		&lt;/script&gt;
 	</code>
 

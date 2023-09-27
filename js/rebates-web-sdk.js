@@ -1,6 +1,10 @@
-var baseUrl = 'https://rebates.swiftlyapi.net';
-var activeUrl = (banner) => `${baseUrl}/rebates/active/'${banner}`;
+//var baseUrl = 'https://rebates.swiftlyapi.net';
+var baseUrl = 'https://rebates.dev.swiftlyapi.net';
+var activeUrl = (banner) => `${baseUrl}/rebates/active/${banner}`;
+var activeForCustomerUrl = (banner, customer) => `${baseUrl}/rebates/active/${banner}/customer/${customer}`;
 var clipUrl = (banner, customer) => `${baseUrl}/rebates/clipped/${banner}/customer/${customer}`;
+var redeemedUrl = (banner, customer) => `${baseUrl}/rebates/clipped/${banner}/customer/${customer}/redeemed`;
+var walletUrl = (banner, customer) => `${baseUrl}/rebates/wallet/${banner}/${customer}`;
 
 function makeSDK(banner, entity, storageName) {
 	return {
@@ -24,6 +28,59 @@ function makeSDK(banner, entity, storageName) {
 
 			return result
  		},
+ 		fetchForUser: async (customer) => {
+			const activeRequest = await fetch(activeForCustomerUrl(banner), {
+				headers: {
+					"Content-Type": "application/json",
+				}
+			})
+			const active = (await activeRequest.json()).activatedRebates
+			const clippedRequest = await fetch(clipUrl(banner, customer), {
+				headers: {
+					"Content-Type": "application/json",
+				}
+			})
+			const clipped = (await clippedRequest.json()).rebatesClipped
+			const redeemedRequest = await fetch(redeemedUrl(banner, customer), {
+				headers: {
+					"Content-Type": "application/json",
+				}
+			})
+			const redeemed = (await redeemedRequest.json()).rebatesClipped
+
+			// note, ordering matters because active -> clipped -> redeemed (state cannot be reverted)
+			const dataById = [...active, ...clipped, ...redeemed].reduce((acc, val) => {
+			    const rebateId = val.rebateId
+				delete val.rebateId
+				acc[rebateId] = val;
+				return acc;
+ 			}, {})
+
+			const storage = JSON.parse(window.localStorage[storageName] || '{}')
+			window.localStorage[storageName] = JSON.stringify({ ...storage, [entity]: dataById })
+
+			// update the URL's
+
+			Object.keys(dataById).forEach(rebateId => {
+				// redraw button states
+				const rebate = dataById[rebateId]
+	 			document.querySelectorAll('swiftly-rebates').forEach(rebateSection => {
+	 				rebateSection.shadowRoot.querySelectorAll(`button[data-swiftly-rebate-id="swiftly-rebate-${rebateId}"]`).forEach(button => {
+	 					if (rebate.status === "Clipped") {
+		 					button.innerHTML = "Clipped";
+		 					button.disabled = true;
+	 					} else if (rebate.status === "Available") {
+		 					button.innerHTML = "Clip";
+		 					button.disabled = false;
+	 					} else {
+	 						// I think this should be redeemed?
+		 					button.innerHTML = "Redeemed";
+		 					button.disabled = true;
+	 					}
+	 				})
+	 			})
+			})
+ 		},
  		details: (rebateId) => {
 			const storage = JSON.parse(window.localStorage[storageName])
 			return { ...storage[entity][rebateId], rebateId }
@@ -42,12 +99,12 @@ function makeSDK(banner, entity, storageName) {
 window.initializeSwiftly = async (banner, storageNameOverride) => {
 	const storageName = storageNameOverride || 'SwiftlyInc';
 	window.swiftly = {
-		login: ({ email, uid, password }) => {
+		login: async ({ email, uid, password }) => {
 			console.log("email and password login attempted", email, password)
 			const token = "something"
 			const id = uid;
 
-			// TODO(call to fetch user's offers)
+			await window.swiftly.rebates.fetchForUser(id)
 
 			const storage = JSON.parse(window.localStorage[storageName] || '{}')
 			window.localStorage[storageName] = JSON.stringify({ ...storage, user: { email, id, token } })
@@ -60,17 +117,36 @@ window.initializeSwiftly = async (banner, storageNameOverride) => {
 	 				console.log("you have to be logged in to clip")
 	 				return
 	 			}
-	 			element.innerHTML = "Clipping";
-	 			element.disabled = true;
-	 			console.log(`TODO: send clip request for token ${window.swiftly.token()}`)
+	 			document.querySelectorAll('swiftly-rebates').forEach(rebateSection => {
+	 				rebateSection.shadowRoot.querySelectorAll(`button[data-swiftly-rebate-id="swiftly-rebate-${rebateId}"]`).forEach(button => {
+	 					button.innerHTML = "Clipping";
+	 					button.disabled = true;
+	 				})
+	 			})
 	 			try {
-		 			const response = await fetch(clipUrl(banner, window.swiftly.customerId));
+		 			const response = await fetch(clipUrl(banner, window.swiftly.customerId()), {
+		 				method: 'POST',
+		 				headers: {
+		 					'Authorization': window.swiftly.token(),
+							'Content-Type': 'application/json',
+		 				},
+		 				body: JSON.stringify([rebateId])
+		 			});
 		 			const result = await response.json();
-		 			element.innerHTML = "Clipped";
+		 			document.querySelectorAll('swiftly-rebates').forEach(rebateSection => {
+		 				rebateSection.shadowRoot.querySelectorAll(`button[data-swiftly-rebate-id="swiftly-rebate-${rebateId}"]`).forEach(button => {
+		 					button.innerHTML = "Clipped"
+		 					button.disabled = true;
+		 				})
+		 			})
 		 		} catch (ex) {
 		 			console.log(ex);
-	 				element.innerHTML = "Clip";
-		 			element.disabled = false;
+		 			document.querySelectorAll('swiftly-rebates').forEach(rebateSection => {
+		 				rebateSection.shadowRoot.querySelectorAll(`button[data-swiftly-rebate-id="swiftly-rebate-${rebateId}"]`).forEach(button => {
+			 				button.innerHTML = "Clip";
+				 			buttont.disabled = false;
+		 				})
+		 			})
 		 		}
 	 		}
 		},
@@ -94,7 +170,7 @@ window.initializeSwiftly = async (banner, storageNameOverride) => {
 			action.addEventListener("click", el => {
 				window.swiftly.rebates.clip(rebateId, el.target);
 			})
-			action.id = `swiftly-rebate-${rebate.rebateId}`;
+			action.setAttribute('data-swiftly-rebate-id', `swiftly-rebate-${rebate.rebateId}`);
 			action.style = 'border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; width:100%; padding: 8px; border: 0; border-top: 1px solid #000;';
 			action.innerHTML = 'Clip';
 		}
@@ -125,7 +201,7 @@ window.initializeSwiftly = async (banner, storageNameOverride) => {
 				shadow = tag.attachShadow({ mode: "open" });
 			}
 			const rebateCategory = tag.getAttribute("category")
-			const rebateId = tag.getAttribute("id")
+			const rebateId = tag.getAttribute("rebate-id")
 
 			if (rebateCategory) {
 				const rebateCards = window.swiftly.rebates.by("category", rebateCategory)
